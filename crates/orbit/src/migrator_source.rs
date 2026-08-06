@@ -7,6 +7,9 @@ pub trait MigratorSource: Send + Sync {
 
     /// Adds a new migration record to the source.
     async fn add_record(&self, record: MigrationRecord) -> OrbitResult<()>;
+
+    /// Remove a migration record from the source by its version.
+    async fn remove_record(&self, version: u64) -> OrbitResult<()>;
 }
 
 #[derive(Debug, Clone)]

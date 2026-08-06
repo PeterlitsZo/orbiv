@@ -6,6 +6,21 @@ pub struct Migrator<H, S> {
     migrations: Vec<Box<dyn Migration<H>>>,
 }
 
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum MigratorSteps {
+    All,
+    Number(u64),
+}
+
+impl MigratorSteps {
+    fn limit(&self) -> usize {
+        match self {
+            Self::All => usize::MAX,
+            Self::Number(number) => usize::try_from(*number).unwrap_or(usize::MAX),
+        }
+    }
+}
+
 impl<H, S> Migrator<H, S>
 where
     H: Send + Sync + 'static,
@@ -15,7 +30,7 @@ where
         MigratorBuilder::new()
     }
 
-    pub async fn up(&self) -> OrbitResult<()> {
+    pub async fn up(&self, steps: MigratorSteps) -> OrbitResult<()> {
         let records = self.source.list_records().await?;
         let has_failed = records.iter().any(|r| !r.success);
         if has_failed {
@@ -27,26 +42,32 @@ where
         self.validate_migrations()?;
         let records = self.validate_records(records)?;
 
-        for migration in self.migrations.iter().skip(records.len()) {
+        for migration in self
+            .migrations
+            .iter()
+            .skip(records.len())
+            .take(steps.limit())
+        {
             // Apply the migration.
             let applied_at = jiff::Timestamp::now();
             let apply_result = migration.up(&self.handler).await;
             let execution_time = jiff::Timestamp::now().duration_since(applied_at);
 
             // Handle the result of the migration.
+            let mut record_to_add = MigrationRecord {
+                version: migration.version(),
+                name: migration.name().to_string(),
+                description: migration.description().to_string(),
+                applied_at,
+                execution_time,
+                success: true,
+                failed_reason: None,
+            };
             match apply_result {
                 Ok(_) => {
                     // Record the migration as applied.
                     self.source
-                        .add_record(MigrationRecord {
-                            version: migration.version(),
-                            name: migration.name().to_string(),
-                            description: migration.description().to_string(),
-                            applied_at,
-                            execution_time,
-                            success: true,
-                            failed_reason: None,
-                        })
+                        .add_record(record_to_add)
                         .await
                         .map_err(|e| e.context("add a record after apply successfully"))?;
                 }
@@ -54,22 +75,51 @@ where
                     let e = e.context("apply migration failed");
 
                     // Record the migration as failed.
+                    record_to_add.success = false;
+                    record_to_add.failed_reason = Some(e.to_string());
                     self.source
-                        .add_record(MigrationRecord {
-                            version: migration.version(),
-                            name: migration.name().to_string(),
-                            description: migration.description().to_string(),
-                            applied_at,
-                            execution_time,
-                            success: false,
-                            failed_reason: Some(e.to_string()),
-                        })
+                        .add_record(record_to_add)
                         .await
                         .map_err(|e| e.context("add a record after apply failed"))?;
 
                     return Err(e);
                 }
             }
+        }
+
+        Ok(())
+    }
+
+    pub async fn down(&self, steps: MigratorSteps) -> OrbitResult<()> {
+        let records = self.source.list_records().await?;
+        let has_failed = records.iter().any(|r| !r.success);
+        if has_failed {
+            return Err(OrbitError::has_failed_migration(
+                "Cannot revert migrations because there are failed previous migrations.",
+            ));
+        }
+
+        self.validate_migrations()?;
+        let records = self.validate_records(records)?;
+
+        for migration in self
+            .migrations
+            .iter()
+            .take(records.len())
+            .rev()
+            .take(steps.limit())
+        {
+            // Revert the migration.
+            migration
+                .down(&self.handler)
+                .await
+                .map_err(|e| e.context("revert migration failed"))?;
+
+            // Remove the record after reverting successfully.
+            self.source
+                .remove_record(migration.version())
+                .await
+                .map_err(|e| e.context("remove a record after revert successfully"))?;
         }
 
         Ok(())
