@@ -1,8 +1,15 @@
 # AGENTS.md
 
+## Behavior
+
+- DO NOT write unit tests until user asks you to do.
+
 ## When You Need to Commit
 
-WHEN THE USER ASKS YOU TO COMMIT, you MUST follow this section.
+WHEN THE USER ASKS YOU TO COMMIT or you WANT TO COMMIT, you MUST follow this
+section.
+
+- DO NOT add & commit the files ignored by git.
 
 ### Git Commit Message
 
