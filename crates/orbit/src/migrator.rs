@@ -31,6 +31,11 @@ where
     }
 
     pub async fn up(&self, steps: MigratorSteps) -> OrbitResult<()> {
+        self.source
+            .install()
+            .await
+            .map_err(|e| e.context("install for up"))?;
+
         let records = self.source.list_records().await?;
         let has_failed = records.iter().any(|r| !r.success);
         if has_failed {
@@ -91,6 +96,11 @@ where
     }
 
     pub async fn down(&self, steps: MigratorSteps) -> OrbitResult<()> {
+        self.source
+            .install()
+            .await
+            .map_err(|e| e.context("install for down"))?;
+
         let records = self.source.list_records().await?;
         let has_failed = records.iter().any(|r| !r.success);
         if has_failed {

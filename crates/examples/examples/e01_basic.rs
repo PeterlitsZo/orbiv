@@ -65,6 +65,10 @@ struct MemoryMigratorSource {
 
 #[async_trait::async_trait]
 impl MigratorSource for MemoryMigratorSource {
+    async fn install(&self) -> OrbitResult<()> {
+        Ok(())
+    }
+
     async fn list_records(&self) -> OrbitResult<Vec<MigrationRecord>> {
         let records = self.records.lock().unwrap();
         Ok(records.clone())
