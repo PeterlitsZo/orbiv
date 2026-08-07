@@ -3,7 +3,7 @@ members = ["crates/*"]
 resolver = "3"
 
 [workspace.package]
-version = "0.1.0"
+version = "0.1.1"
 description = "Orbit, the migration framework."
 license = "MIT or Apache-2.0"
 readme = "README.md"

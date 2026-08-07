@@ -8,8 +8,8 @@ license.workspace = true
 readme.workspace = true
 
 [dependencies]
-orbiv = { path = "../orbiv", version = "0.1.0"}
-orbiv-migrator-source-sqlx = { path = "../orbiv-migrator-source-sqlx", version = "0.1.0"}
+orbiv = { path = "../orbiv", version = "0.1.1"}
+orbiv-migrator-source-sqlx = { path = "../orbiv-migrator-source-sqlx", version = "0.1.1"}
 
 anyhow = "1.0.104"
 async-trait = "0.1.91"

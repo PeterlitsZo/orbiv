@@ -7,7 +7,7 @@ license.workspace = true
 readme.workspace = true
 
 [dependencies]
-orbiv = { path = "../orbiv", version = "0.1.0"}
+orbiv = { path = "../orbiv", version = "0.1.1"}
 
 async-trait = "0.1.91"
 redis = { version = "1.5.0", features = ["tokio-comp"] }
