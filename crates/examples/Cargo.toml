@@ -2,6 +2,10 @@
 name = "examples"
 version.workspace = true
 edition = "2024"
+publish = false
+description.workspace = true
+license.workspace = true
+readme.workspace = true
 
 [dependencies]
 orbiv = { path = "../orbiv", version = "0.1.0"}

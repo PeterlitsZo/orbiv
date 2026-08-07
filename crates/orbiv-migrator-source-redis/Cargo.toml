@@ -2,6 +2,9 @@
 name = "orbiv-migrator-source-redis"
 version.workspace = true
 edition = "2024"
+description.workspace = true
+license.workspace = true
+readme.workspace = true
 
 [dependencies]
 orbiv = { path = "../orbiv", version = "0.1.0"}

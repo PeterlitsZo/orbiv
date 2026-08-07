@@ -11,6 +11,13 @@ migrations.
 
 ## Tutorial
 
+Use `cargo` to add dependencies to your project:
+
+```
+cargo add orbiv
+cargo add orbiv-migrator-source-sqlx
+```
+
 First at all, you should define a handler to access the database or anything
 you want to migrate.
 

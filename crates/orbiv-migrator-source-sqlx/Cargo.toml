@@ -2,6 +2,9 @@
 name = "orbiv-migrator-source-sqlx"
 version.workspace = true
 edition = "2024"
+description.workspace = true
+license.workspace = true
+readme.workspace = true
 
 [dependencies]
 async-trait = "0.1.91"
