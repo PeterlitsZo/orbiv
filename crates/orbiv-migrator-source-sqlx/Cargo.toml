@@ -1,5 +1,5 @@
 [package]
-name = "orbit-migrator-source-sqlx"
+name = "orbiv-migrator-source-sqlx"
 version = "0.1.0"
 edition = "2024"
 
@@ -7,5 +7,5 @@ edition = "2024"
 async-trait = "0.1.91"
 indoc = "2.0.7"
 jiff = "0.2.35"
-orbit = { path = "../orbit" }
+orbiv = { path = "../orbiv" }
 sqlx = { version = "0.9.0", default-features = false, features = ["runtime-tokio", "mysql", "postgres", "sqlite"] }

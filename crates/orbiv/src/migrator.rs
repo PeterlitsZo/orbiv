@@ -1,4 +1,4 @@
-use crate::{Migration, MigrationRecord, MigratorSource, OrbitError, OrbitResult};
+use crate::{Migration, MigrationRecord, MigratorSource, OrbivError, OrbivResult};
 
 pub struct Migrator<H, S> {
     handler: H,
@@ -30,7 +30,7 @@ where
         MigratorBuilder::new()
     }
 
-    pub async fn up(&self, steps: MigratorSteps) -> OrbitResult<()> {
+    pub async fn up(&self, steps: MigratorSteps) -> OrbivResult<()> {
         self.source
             .install()
             .await
@@ -39,7 +39,7 @@ where
         let records = self.source.list_records().await?;
         let has_failed = records.iter().any(|r| !r.success);
         if has_failed {
-            return Err(OrbitError::has_failed_migration(
+            return Err(OrbivError::has_failed_migration(
                 "Cannot apply migrations because there are failed previous migrations.",
             ));
         }
@@ -95,7 +95,7 @@ where
         Ok(())
     }
 
-    pub async fn down(&self, steps: MigratorSteps) -> OrbitResult<()> {
+    pub async fn down(&self, steps: MigratorSteps) -> OrbivResult<()> {
         self.source
             .install()
             .await
@@ -104,7 +104,7 @@ where
         let records = self.source.list_records().await?;
         let has_failed = records.iter().any(|r| !r.success);
         if has_failed {
-            return Err(OrbitError::has_failed_migration(
+            return Err(OrbivError::has_failed_migration(
                 "Cannot revert migrations because there are failed previous migrations.",
             ));
         }
@@ -135,12 +135,12 @@ where
         Ok(())
     }
 
-    fn validate_migrations(&self) -> OrbitResult<()> {
+    fn validate_migrations(&self) -> OrbivResult<()> {
         for (index, migration) in self.migrations.iter().enumerate() {
             let expected_version = index as u64 + 1;
             let actual_version = migration.version();
             if actual_version != expected_version {
-                return Err(OrbitError::invalid_migration(format!(
+                return Err(OrbivError::invalid_migration(format!(
                     "Invalid local migration sequence: expected version {expected_version}, found version {actual_version} ({}).",
                     migration.name(),
                 )));
@@ -153,27 +153,27 @@ where
     fn validate_records(
         &self,
         mut records: Vec<MigrationRecord>,
-    ) -> OrbitResult<Vec<MigrationRecord>> {
+    ) -> OrbivResult<Vec<MigrationRecord>> {
         records.sort_unstable_by_key(|record| record.version);
 
         for (index, record) in records.iter().enumerate() {
             let expected_version = index as u64 + 1;
             if record.version != expected_version {
-                return Err(OrbitError::invalid_migration(format!(
+                return Err(OrbivError::invalid_migration(format!(
                     "Invalid migration history: expected recorded version {expected_version}, found version {} ({}).",
                     record.version, record.name,
                 )));
             }
 
             let migration = self.migrations.get(index).ok_or_else(|| {
-                OrbitError::invalid_migration(format!(
+                OrbivError::invalid_migration(format!(
                     "Invalid migration history: recorded version {} ({}) does not exist in the local migration list.",
                     record.version, record.name,
                 ))
             })?;
 
             if record.name != migration.name() {
-                return Err(OrbitError::invalid_migration(format!(
+                return Err(OrbivError::invalid_migration(format!(
                     "Invalid migration history for version {}: expected name {:?}, found {:?}.",
                     record.version,
                     migration.name(),
@@ -226,16 +226,16 @@ where
         self
     }
 
-    pub fn build(self) -> OrbitResult<Migrator<H, S>> {
+    pub fn build(self) -> OrbivResult<Migrator<H, S>> {
         let handler = self
             .handler
-            .ok_or_else(|| OrbitError::bad_argument("Missing handler."))?;
+            .ok_or_else(|| OrbivError::bad_argument("Missing handler."))?;
         let source = self
             .source
-            .ok_or_else(|| OrbitError::bad_argument("Missing source."))?;
+            .ok_or_else(|| OrbivError::bad_argument("Missing source."))?;
         let migrations = self
             .migrations
-            .ok_or_else(|| OrbitError::bad_argument("Missing migrations."))?;
+            .ok_or_else(|| OrbivError::bad_argument("Missing migrations."))?;
 
         Ok(Migrator {
             handler,

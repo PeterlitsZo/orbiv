@@ -4,8 +4,8 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
-orbit = { path = "../orbit" }
-orbit-migrator-source-sqlx = { path = "../orbit-migrator-source-sqlx" }
+orbiv = { path = "../orbiv" }
+orbiv-migrator-source-sqlx = { path = "../orbiv-migrator-source-sqlx" }
 
 anyhow = "1.0.104"
 async-trait = "0.1.91"

@@ -1,6 +1,6 @@
 use std::sync::{Arc, Mutex};
 
-use orbit::{Migration, MigrationRecord, Migrator, MigratorSource, MigratorSteps, OrbitResult};
+use orbiv::{Migration, MigrationRecord, Migrator, MigratorSource, MigratorSteps, OrbivResult};
 
 type MemoryHandler = Arc<Mutex<Vec<String>>>;
 
@@ -20,12 +20,12 @@ impl Migration<MemoryHandler> for MigrationV001 {
         "Adds a 'foobar' string to the memory handler."
     }
 
-    async fn up(&self, handler: &MemoryHandler) -> OrbitResult<()> {
+    async fn up(&self, handler: &MemoryHandler) -> OrbivResult<()> {
         handler.lock().unwrap().push("foobar".to_string());
         Ok(())
     }
 
-    async fn down(&self, handler: &MemoryHandler) -> OrbitResult<()> {
+    async fn down(&self, handler: &MemoryHandler) -> OrbivResult<()> {
         handler.lock().unwrap().pop();
         Ok(())
     }
@@ -47,12 +47,12 @@ impl Migration<MemoryHandler> for MigrationV002 {
         "Adds a 'barfoo' string to the memory handler."
     }
 
-    async fn up(&self, handler: &MemoryHandler) -> OrbitResult<()> {
+    async fn up(&self, handler: &MemoryHandler) -> OrbivResult<()> {
         handler.lock().unwrap().push("barfoo".to_string());
         Ok(())
     }
 
-    async fn down(&self, handler: &MemoryHandler) -> OrbitResult<()> {
+    async fn down(&self, handler: &MemoryHandler) -> OrbivResult<()> {
         handler.lock().unwrap().pop();
         Ok(())
     }
@@ -65,21 +65,21 @@ struct MemoryMigratorSource {
 
 #[async_trait::async_trait]
 impl MigratorSource for MemoryMigratorSource {
-    async fn install(&self) -> OrbitResult<()> {
+    async fn install(&self) -> OrbivResult<()> {
         Ok(())
     }
 
-    async fn list_records(&self) -> OrbitResult<Vec<MigrationRecord>> {
+    async fn list_records(&self) -> OrbivResult<Vec<MigrationRecord>> {
         let records = self.records.lock().unwrap();
         Ok(records.clone())
     }
 
-    async fn add_record(&self, record: MigrationRecord) -> OrbitResult<()> {
+    async fn add_record(&self, record: MigrationRecord) -> OrbivResult<()> {
         self.records.lock().unwrap().push(record);
         Ok(())
     }
 
-    async fn remove_record(&self, version: u64) -> OrbitResult<()> {
+    async fn remove_record(&self, version: u64) -> OrbivResult<()> {
         let mut records = self.records.lock().unwrap();
         records.retain(|r| r.version != version);
         Ok(())

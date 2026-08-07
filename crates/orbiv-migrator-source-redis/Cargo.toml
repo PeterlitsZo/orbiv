@@ -1,10 +1,10 @@
 [package]
-name = "orbit-migrator-source-redis"
+name = "orbiv-migrator-source-redis"
 version = "0.1.0"
 edition = "2024"
 
 [dependencies]
-orbit = { path = "../orbit" }
+orbiv = { path = "../orbiv" }
 
 async-trait = "0.1.91"
 redis = { version = "1.5.0", features = ["tokio-comp"] }

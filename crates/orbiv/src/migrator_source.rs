@@ -1,4 +1,4 @@
-use crate::OrbitResult;
+use crate::OrbivResult;
 
 /// Represents a source for migration records, such as a database or something
 /// else.
@@ -18,22 +18,22 @@ pub trait MigratorSource: Send + Sync {
     ///
     /// For example, if the migrator source is a database, this might create the
     /// necessary tables.
-    async fn install(&self) -> OrbitResult<()>;
+    async fn install(&self) -> OrbivResult<()>;
 
     /// Lists all migration records from the source.
     ///
     /// The records MUST be returned in ascending order by version.
-    async fn list_records(&self) -> OrbitResult<Vec<MigrationRecord>>;
+    async fn list_records(&self) -> OrbivResult<Vec<MigrationRecord>>;
 
     /// Adds a new migration record to the source.
     ///
     /// If the version already exists, it MUST raise an error.
-    async fn add_record(&self, record: MigrationRecord) -> OrbitResult<()>;
+    async fn add_record(&self, record: MigrationRecord) -> OrbivResult<()>;
 
     /// Remove a migration record from the source by its version.
     ///
     /// If the version does not exist, it MUST raise an error.
-    async fn remove_record(&self, version: u64) -> OrbitResult<()>;
+    async fn remove_record(&self, version: u64) -> OrbivResult<()>;
 }
 
 #[derive(Debug, Clone)]

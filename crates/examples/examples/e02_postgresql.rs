@@ -1,5 +1,5 @@
-use orbit::{Migration, Migrator, MigratorSteps, OrbitError, OrbitResult};
-use orbit_migrator_source_sqlx::{OrbitMigratorSourceSqlx, OrbitMigratorSourceSqlxOptions};
+use orbiv::{Migration, Migrator, MigratorSteps, OrbivError, OrbivResult};
+use orbiv_migrator_source_sqlx::{OrbivMigratorSourceSqlx, OrbivMigratorSourceSqlxOptions};
 
 #[derive(Clone)]
 struct PostgresHandler {
@@ -28,23 +28,23 @@ impl Migration<PostgresHandler> for MigrationV001 {
         "Adds a 'foobar' table."
     }
 
-    async fn up(&self, handler: &PostgresHandler) -> OrbitResult<()> {
+    async fn up(&self, handler: &PostgresHandler) -> OrbivResult<()> {
         sqlx::query("CREATE TABLE foobar (id SERIAL PRIMARY KEY, value TEXT)")
             .execute(&handler.pool)
             .await
-            .map_err(|e| OrbitError::internal("failed to create foobar table").source(e))?;
+            .map_err(|e| OrbivError::internal("failed to create foobar table").source(e))?;
         sqlx::query("INSERT INTO foobar (value) VALUES ('foobar')")
             .execute(&handler.pool)
             .await
-            .map_err(|e| OrbitError::internal("failed to insert into foobar table").source(e))?;
+            .map_err(|e| OrbivError::internal("failed to insert into foobar table").source(e))?;
         Ok(())
     }
 
-    async fn down(&self, handler: &PostgresHandler) -> OrbitResult<()> {
+    async fn down(&self, handler: &PostgresHandler) -> OrbivResult<()> {
         sqlx::query("DROP TABLE foobar")
             .execute(&handler.pool)
             .await
-            .map_err(|e| OrbitError::internal("failed to create foobar table").source(e))?;
+            .map_err(|e| OrbivError::internal("failed to create foobar table").source(e))?;
         Ok(())
     }
 }
@@ -65,23 +65,23 @@ impl Migration<PostgresHandler> for MigrationV002 {
         "Adds a 'barfoo' table."
     }
 
-    async fn up(&self, handler: &PostgresHandler) -> OrbitResult<()> {
+    async fn up(&self, handler: &PostgresHandler) -> OrbivResult<()> {
         sqlx::query("CREATE TABLE barfoo (id SERIAL PRIMARY KEY, value TEXT)")
             .execute(&handler.pool)
             .await
-            .map_err(|e| OrbitError::internal("failed to create barfoo table").source(e))?;
+            .map_err(|e| OrbivError::internal("failed to create barfoo table").source(e))?;
         sqlx::query("INSERT INTO barfoo (value) VALUES ('barfoo')")
             .execute(&handler.pool)
             .await
-            .map_err(|e| OrbitError::internal("failed to insert into barfoo table").source(e))?;
+            .map_err(|e| OrbivError::internal("failed to insert into barfoo table").source(e))?;
         Ok(())
     }
 
-    async fn down(&self, handler: &PostgresHandler) -> OrbitResult<()> {
+    async fn down(&self, handler: &PostgresHandler) -> OrbivResult<()> {
         sqlx::query("DROP TABLE barfoo")
             .execute(&handler.pool)
             .await
-            .map_err(|e| OrbitError::internal("failed to create barfoo table").source(e))?;
+            .map_err(|e| OrbivError::internal("failed to create barfoo table").source(e))?;
         Ok(())
     }
 }
@@ -98,9 +98,9 @@ async fn main() -> anyhow::Result<()> {
     let handler = PostgresHandler::new(pool.clone()).await?;
 
     // Build the migrator source and migrations.
-    let source = OrbitMigratorSourceSqlx::new(
+    let source = OrbivMigratorSourceSqlx::new(
         "default",
-        OrbitMigratorSourceSqlxOptions { pool: pool.clone() },
+        OrbivMigratorSourceSqlxOptions { pool: pool.clone() },
     )
     .unwrap();
     let migrations: Vec<Box<dyn Migration<PostgresHandler>>> =
@@ -116,7 +116,7 @@ async fn main() -> anyhow::Result<()> {
     migrator.up(MigratorSteps::All).await.unwrap();
 
     // Verify the migrations were applied.
-    let rows = sqlx::query("SELECT * FROM orbit_migrations")
+    let rows = sqlx::query("SELECT * FROM orbiv_migrations")
         .fetch_all(&pool)
         .await
         .unwrap();
@@ -138,7 +138,7 @@ async fn main() -> anyhow::Result<()> {
     migrator.down(MigratorSteps::All).await.unwrap();
 
     // Verify the migrations were rolled back correctly.
-    let rows = sqlx::query("SELECT * FROM orbit_migrations")
+    let rows = sqlx::query("SELECT * FROM orbiv_migrations")
         .fetch_all(&pool)
         .await
         .unwrap();

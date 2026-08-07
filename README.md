@@ -1,12 +1,12 @@
-# Orbit
+# Orbiv
 
-The Orbit crates provides a framework for managing database (or anything)
+The Orbiv crates provides a framework for managing database (or anything)
 migrations.
 
-- `orbit`: The core crate providing the core migration logic.
-- `orbit-migrator-source-redis`: A Redis-based source for Orbit with `redis`
+- `orbiv`: The core crate providing the core migration logic.
+- `orbiv-migrator-source-redis`: A Redis-based source for Orbiv with `redis`
   crate.
-- `orbit-migrator-source-sqlx`: A SQL-based source for Orbit with `sqlx`
+- `orbiv-migrator-source-sqlx`: A SQL-based source for Orbiv with `sqlx`
   crate.
 
 ## Tutorial
@@ -50,23 +50,23 @@ impl Migration<PostgresHandler> for MigrationV001 {
         "Adds a 'foobar' table."
     }
 
-    async fn up(&self, handler: &PostgresHandler) -> OrbitResult<()> {
+    async fn up(&self, handler: &PostgresHandler) -> OrbivResult<()> {
         sqlx::query("CREATE TABLE foobar (id SERIAL PRIMARY KEY, value TEXT)")
             .execute(&handler.pool)
             .await
-            .map_err(|e| OrbitError::internal("failed to create foobar table").source(e))?;
+            .map_err(|e| OrbivError::internal("failed to create foobar table").source(e))?;
         sqlx::query("INSERT INTO foobar (value) VALUES ('foobar')")
             .execute(&handler.pool)
             .await
-            .map_err(|e| OrbitError::internal("failed to insert into foobar table").source(e))?;
+            .map_err(|e| OrbivError::internal("failed to insert into foobar table").source(e))?;
         Ok(())
     }
 
-    async fn down(&self, handler: &PostgresHandler) -> OrbitResult<()> {
+    async fn down(&self, handler: &PostgresHandler) -> OrbivResult<()> {
         sqlx::query("DROP TABLE foobar")
             .execute(&handler.pool)
             .await
-            .map_err(|e| OrbitError::internal("failed to create foobar table").source(e))?;
+            .map_err(|e| OrbivError::internal("failed to create foobar table").source(e))?;
         Ok(())
     }
 }
@@ -86,7 +86,7 @@ It is very simple:
 Then we can give the handler, source and migrations list here:
 
 ````rust
-use orbit_migrator_source_sqlx::{OrbitMigratorSourceSqlx, OrbitMigratorSourceSqlxOptions};
+use orbiv_migrator_source_sqlx::{OrbivMigratorSourceSqlx, OrbivMigratorSourceSqlxOptions};
 
 // You can use this command to run a PostgreSQL server locally:
 //
@@ -98,9 +98,9 @@ let handler = PostgresHandler::new(pool.clone())
         .await?;
 
 // Build the migrator source and migrations.
-let source = OrbitMigratorSourceSqlx::new(
+let source = OrbivMigratorSourceSqlx::new(
     "default",
-    OrbitMigratorSourceSqlxOptions { pool: pool.clone() },
+    OrbivMigratorSourceSqlxOptions { pool: pool.clone() },
 ).unwrap();
 let migrations: Vec<Box<dyn Migration<PostgresHandler>>> =
     vec![Box::new(MigrationV001), Box::new(MigrationV002)];
@@ -110,9 +110,9 @@ The handler is used to let migration access the database (or anything else). The
 source is used to help the migrator to store the metadata about the migrations.
 The migrations list is a list of all the migrations to apply.
 
-Here we use the `OrbitMigratorSourceSqlx` -- a SQLx-based implementation of the
+Here we use the `OrbivMigratorSourceSqlx` -- a SQLx-based implementation of the
 migrator source. You can use it if you want to store the migration metadata in a
-SQL database. We also define the `OrbitMigratorSourceRedis`, if you want to
+SQL database. We also define the `OrbivMigratorSourceRedis`, if you want to
 store the migration metadata in Redis.
 
 Then it is very easy to build a migrator and let it run:

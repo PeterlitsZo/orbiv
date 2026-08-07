@@ -1,9 +1,9 @@
 use std::error::Error;
 use std::fmt::{Debug, Display};
 
-pub struct OrbitError {
+pub struct OrbivError {
     /// The kind of error that occurred.
-    kind: OrbitErrorKind,
+    kind: OrbivErrorKind,
     /// The context of the error, if any.
     ///
     /// It should be like a stack trace. Like "do something: do something else".
@@ -14,8 +14,8 @@ pub struct OrbitError {
     source: Option<anyhow::Error>,
 }
 
-impl OrbitError {
-    fn new<T>(kind: OrbitErrorKind, message: T) -> Self
+impl OrbivError {
+    fn new<T>(kind: OrbivErrorKind, message: T) -> Self
     where
         T: Into<String>,
     {
@@ -31,46 +31,46 @@ impl OrbitError {
     where
         T: Into<String>,
     {
-        Self::new(OrbitErrorKind::Internal, message)
+        Self::new(OrbivErrorKind::Internal, message)
     }
 
     pub fn unimplemented<T>(message: T) -> Self
     where
         T: Into<String>,
     {
-        Self::new(OrbitErrorKind::Unimplemented, message)
+        Self::new(OrbivErrorKind::Unimplemented, message)
     }
 
     pub fn bad_argument<T>(message: T) -> Self
     where
         T: Into<String>,
     {
-        Self::new(OrbitErrorKind::BadArgument, message)
+        Self::new(OrbivErrorKind::BadArgument, message)
     }
 
     pub fn has_failed_migration<T>(message: T) -> Self
     where
         T: Into<String>,
     {
-        Self::new(OrbitErrorKind::HasFailedMigration, message)
+        Self::new(OrbivErrorKind::HasFailedMigration, message)
     }
 
     pub fn invalid_migration<T>(message: T) -> Self
     where
         T: Into<String>,
     {
-        Self::new(OrbitErrorKind::InvalidMigration, message)
+        Self::new(OrbivErrorKind::InvalidMigration, message)
     }
 }
 
-impl OrbitError {
+impl OrbivError {
     /// Get the kind of error that occurred.
-    pub fn kind(&self) -> &OrbitErrorKind {
+    pub fn kind(&self) -> &OrbivErrorKind {
         &self.kind
     }
 }
 
-impl OrbitError {
+impl OrbivError {
     /// Set the source of the error.
     ///
     /// If the source is already set, it will be replaced.
@@ -101,7 +101,7 @@ impl OrbitError {
     }
 }
 
-impl Display for OrbitError {
+impl Display for OrbivError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self.context {
             Some(ref context) => write!(f, "({:?}) {:?}: {}", self.kind, context, self.message),
@@ -114,20 +114,20 @@ impl Display for OrbitError {
     }
 }
 
-impl Debug for OrbitError {
+impl Debug for OrbivError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}", self)
     }
 }
 
-impl Error for OrbitError {
+impl Error for OrbivError {
     fn source(&self) -> Option<&(dyn Error + 'static)> {
         self.context.as_ref().map(|source| source.as_ref())
     }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum OrbitErrorKind {
+pub enum OrbivErrorKind {
     /// An internal error occurred.
     Internal,
     /// Not implemented.
@@ -140,4 +140,4 @@ pub enum OrbitErrorKind {
     InvalidMigration,
 }
 
-pub type OrbitResult<T> = Result<T, OrbitError>;
+pub type OrbivResult<T> = Result<T, OrbivError>;

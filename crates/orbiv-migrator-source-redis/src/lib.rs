@@ -1,31 +1,31 @@
-use orbit::{MigrationRecord, MigratorSource, OrbitError, OrbitResult};
+use orbiv::{MigrationRecord, MigratorSource, OrbivError, OrbivResult};
 use redis::AsyncCommands;
 
-/// Options used to connect an [`OrbitMigratorSourceRedis`] to Redis.
+/// Options used to connect an [`OrbivMigratorSourceRedis`] to Redis.
 #[derive(Debug, Clone)]
-pub struct OrbitMigratorSourceRedisOptions {
+pub struct OrbivMigratorSourceRedisOptions {
     /// A Redis connection URL, for example `redis://127.0.0.1/`.
     pub url: String,
 }
 
-/// Stores Orbit migration records in a Redis hash.
+/// Stores Orbiv migration records in a Redis hash.
 #[derive(Clone)]
-pub struct OrbitMigratorSourceRedis {
+pub struct OrbivMigratorSourceRedis {
     component: String,
     client: redis::Client,
 }
 
-impl OrbitMigratorSourceRedis {
+impl OrbivMigratorSourceRedis {
     /// Creates a Redis-backed migrator source.
     ///
     /// This validates the connection URL but does not connect to Redis. A
     /// connection is established when a record operation is first executed.
     pub fn new(
         component: impl Into<String>,
-        opts: OrbitMigratorSourceRedisOptions,
-    ) -> OrbitResult<Self> {
+        opts: OrbivMigratorSourceRedisOptions,
+    ) -> OrbivResult<Self> {
         let client = redis::Client::open(opts.url).map_err(|error| {
-            OrbitError::bad_argument("Invalid Redis connection URL.").source(error)
+            OrbivError::bad_argument("Invalid Redis connection URL.").source(error)
         })?;
 
         Ok(Self {
@@ -35,59 +35,59 @@ impl OrbitMigratorSourceRedis {
     }
 
     fn migrations_key(&self) -> String {
-        format!("orbit:{{{}}}:migrations", self.component)
+        format!("orbiv:{{{}}}:migrations", self.component)
     }
 
-    async fn connection(&self) -> OrbitResult<redis::aio::MultiplexedConnection> {
+    async fn connection(&self) -> OrbivResult<redis::aio::MultiplexedConnection> {
         self.client
             .get_multiplexed_async_connection()
             .await
-            .map_err(|error| OrbitError::internal("Failed to connect to Redis.").source(error))
+            .map_err(|error| OrbivError::internal("Failed to connect to Redis.").source(error))
     }
 }
 
 #[async_trait::async_trait]
-impl MigratorSource for OrbitMigratorSourceRedis {
+impl MigratorSource for OrbivMigratorSourceRedis {
     fn component(&self) -> String {
         self.component.clone()
     }
 
-    async fn install(&self) -> OrbitResult<()> {
+    async fn install(&self) -> OrbivResult<()> {
         Ok(())
     }
 
-    async fn list_records(&self) -> OrbitResult<Vec<MigrationRecord>> {
+    async fn list_records(&self) -> OrbivResult<Vec<MigrationRecord>> {
         let mut connection = self.connection().await?;
         let values: Vec<String> =
             connection
                 .hvals(self.migrations_key())
                 .await
                 .map_err(|error| {
-                    OrbitError::internal("Failed to list migration records from Redis.")
+                    OrbivError::internal("Failed to list migration records from Redis.")
                         .source(error)
                 })?;
 
         let mut records = values
             .into_iter()
             .map(|value| json_to_record(&value))
-            .collect::<OrbitResult<Vec<_>>>()?;
+            .collect::<OrbivResult<Vec<_>>>()?;
 
         records.sort_by_key(|record| record.version);
         Ok(records)
     }
 
-    async fn add_record(&self, record: MigrationRecord) -> OrbitResult<()> {
+    async fn add_record(&self, record: MigrationRecord) -> OrbivResult<()> {
         let value = record_to_json(&record)?;
         let mut connection = self.connection().await?;
         let inserted: bool = connection
             .hset_nx(self.migrations_key(), record.version, value)
             .await
             .map_err(|error| {
-                OrbitError::internal("Failed to add a migration record to Redis.").source(error)
+                OrbivError::internal("Failed to add a migration record to Redis.").source(error)
             })?;
 
         if !inserted {
-            return Err(OrbitError::bad_argument(format!(
+            return Err(OrbivError::bad_argument(format!(
                 "Migration version {} already exists.",
                 record.version
             )));
@@ -96,18 +96,18 @@ impl MigratorSource for OrbitMigratorSourceRedis {
         Ok(())
     }
 
-    async fn remove_record(&self, version: u64) -> OrbitResult<()> {
+    async fn remove_record(&self, version: u64) -> OrbivResult<()> {
         let mut connection = self.connection().await?;
         let removed: usize = connection
             .hdel(self.migrations_key(), version)
             .await
             .map_err(|error| {
-                OrbitError::internal("Failed to remove a migration record from Redis.")
+                OrbivError::internal("Failed to remove a migration record from Redis.")
                     .source(error)
             })?;
 
         if removed == 0 {
-            return Err(OrbitError::bad_argument(format!(
+            return Err(OrbivError::bad_argument(format!(
                 "Migration version {version} does not exist."
             )));
         }
@@ -127,7 +127,7 @@ struct InnerMigrationRecord {
     failed_reason: Option<String>,
 }
 
-fn record_to_json(record: &MigrationRecord) -> OrbitResult<String> {
+fn record_to_json(record: &MigrationRecord) -> OrbivResult<String> {
     serde_json::to_string(&InnerMigrationRecord {
         version: record.version,
         name: record.name.clone(),
@@ -137,12 +137,12 @@ fn record_to_json(record: &MigrationRecord) -> OrbitResult<String> {
         success: record.success,
         failed_reason: record.failed_reason.clone(),
     })
-    .map_err(|error| OrbitError::internal("Failed to serialize a migration record.").source(error))
+    .map_err(|error| OrbivError::internal("Failed to serialize a migration record.").source(error))
 }
 
-fn json_to_record(json: &str) -> OrbitResult<MigrationRecord> {
+fn json_to_record(json: &str) -> OrbivResult<MigrationRecord> {
     let inner: InnerMigrationRecord = serde_json::from_str(json).map_err(|error| {
-        OrbitError::internal("Failed to parse a migration record from Redis.").source(error)
+        OrbivError::internal("Failed to parse a migration record from Redis.").source(error)
     })?;
     Ok(MigrationRecord {
         version: inner.version,

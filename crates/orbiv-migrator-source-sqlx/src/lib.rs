@@ -1,9 +1,9 @@
 use indoc::indoc;
-use orbit::{MigrationRecord, MigratorSource, OrbitError, OrbitResult};
+use orbiv::{MigrationRecord, MigratorSource, OrbivError, OrbivResult};
 use sqlx::{Database, Pool, Row};
 
 const CREATE_MIGRATIONS_TABLE_SQL: &str = indoc! {r#"
-    CREATE TABLE IF NOT EXISTS orbit_migrations (
+    CREATE TABLE IF NOT EXISTS orbiv_migrations (
         component VARCHAR(127) NOT NULL,
         version BIGINT NOT NULL,
         name VARCHAR(255) NOT NULL,
@@ -16,14 +16,14 @@ const CREATE_MIGRATIONS_TABLE_SQL: &str = indoc! {r#"
     )
 "#};
 
-pub struct OrbitMigratorSourceSqlxOptions<DB>
+pub struct OrbivMigratorSourceSqlxOptions<DB>
 where
     DB: Database,
 {
     pub pool: Pool<DB>,
 }
 
-pub struct OrbitMigratorSourceSqlx<DB>
+pub struct OrbivMigratorSourceSqlx<DB>
 where
     DB: Database,
 {
@@ -31,7 +31,7 @@ where
     pool: Pool<DB>,
 }
 
-impl<DB> Clone for OrbitMigratorSourceSqlx<DB>
+impl<DB> Clone for OrbivMigratorSourceSqlx<DB>
 where
     DB: Database,
 {
@@ -43,17 +43,17 @@ where
     }
 }
 
-impl<DB> OrbitMigratorSourceSqlx<DB>
+impl<DB> OrbivMigratorSourceSqlx<DB>
 where
     DB: Database,
 {
     pub fn new(
         component: impl Into<String>,
-        opts: OrbitMigratorSourceSqlxOptions<DB>,
-    ) -> OrbitResult<Self> {
+        opts: OrbivMigratorSourceSqlxOptions<DB>,
+    ) -> OrbivResult<Self> {
         let component = component.into();
         if component.chars().count() > 127 {
-            return Err(OrbitError::bad_argument(
+            return Err(OrbivError::bad_argument(
                 "SQL migrator source component cannot exceed 127 characters.",
             ));
         }
@@ -64,38 +64,38 @@ where
         })
     }
 
-    fn version_to_i64(version: u64) -> OrbitResult<i64> {
+    fn version_to_i64(version: u64) -> OrbivResult<i64> {
         i64::try_from(version).map_err(|error| {
-            OrbitError::bad_argument("Migration version exceeds the SQL BIGINT range.")
+            OrbivError::bad_argument("Migration version exceeds the SQL BIGINT range.")
                 .source(error)
         })
     }
 
-    fn version_from_i64(version: i64) -> OrbitResult<u64> {
+    fn version_from_i64(version: i64) -> OrbivResult<u64> {
         u64::try_from(version).map_err(|error| {
-            OrbitError::internal("SQL migration record contains a negative version.").source(error)
+            OrbivError::internal("SQL migration record contains a negative version.").source(error)
         })
     }
 
-    fn validate_name(name: &str) -> OrbitResult<()> {
+    fn validate_name(name: &str) -> OrbivResult<()> {
         if name.chars().count() > 127 {
-            return Err(OrbitError::bad_argument(
+            return Err(OrbivError::bad_argument(
                 "SQL migration name cannot exceed 127 characters.",
             ));
         }
         Ok(())
     }
 
-    fn timestamp_from_millis(value: i64) -> OrbitResult<jiff::Timestamp> {
+    fn timestamp_from_millis(value: i64) -> OrbivResult<jiff::Timestamp> {
         jiff::Timestamp::from_millisecond(value).map_err(|error| {
-            OrbitError::internal("SQL migration record contains an out-of-range applied_at value.")
+            OrbivError::internal("SQL migration record contains an out-of-range applied_at value.")
                 .source(error)
         })
     }
 
-    fn duration_to_millis(duration: jiff::SignedDuration) -> OrbitResult<i64> {
+    fn duration_to_millis(duration: jiff::SignedDuration) -> OrbivResult<i64> {
         i64::try_from(duration.as_millis()).map_err(|error| {
-            OrbitError::bad_argument(
+            OrbivError::bad_argument(
                 "Migration execution time exceeds the SQL BIGINT millisecond range.",
             )
             .source(error)
@@ -106,29 +106,29 @@ where
 macro_rules! impl_migrator_source {
     ($database:ty, $list_sql:expr, $add_sql:expr, $remove_sql:expr) => {
         #[async_trait::async_trait]
-        impl MigratorSource for OrbitMigratorSourceSqlx<$database> {
+        impl MigratorSource for OrbivMigratorSourceSqlx<$database> {
             fn component(&self) -> String {
                 self.component.clone()
             }
 
-            async fn install(&self) -> OrbitResult<()> {
+            async fn install(&self) -> OrbivResult<()> {
                 sqlx::query(CREATE_MIGRATIONS_TABLE_SQL)
                     .execute(&self.pool)
                     .await
                     .map_err(|error| {
-                        OrbitError::internal("Failed to create the SQL migration records table.")
+                        OrbivError::internal("Failed to create the SQL migration records table.")
                             .source(error)
                     })?;
                 Ok(())
             }
 
-            async fn list_records(&self) -> OrbitResult<Vec<MigrationRecord>> {
+            async fn list_records(&self) -> OrbivResult<Vec<MigrationRecord>> {
                 let rows = sqlx::query($list_sql)
                     .bind(&self.component)
                     .fetch_all(&self.pool)
                     .await
                     .map_err(|error| {
-                        OrbitError::internal(
+                        OrbivError::internal(
                             "Failed to list migration records from the SQL database.",
                         )
                         .source(error)
@@ -137,35 +137,35 @@ macro_rules! impl_migrator_source {
                 rows.into_iter()
                     .map(|row| {
                         let version: i64 = row.try_get("version").map_err(|error| {
-                            OrbitError::internal("Failed to read a SQL migration version.")
+                            OrbivError::internal("Failed to read a SQL migration version.")
                                 .source(error)
                         })?;
                         let name: String = row.try_get("name").map_err(|error| {
-                            OrbitError::internal("Failed to read a SQL migration name.")
+                            OrbivError::internal("Failed to read a SQL migration name.")
                                 .source(error)
                         })?;
                         let description: String = row.try_get("description").map_err(|error| {
-                            OrbitError::internal("Failed to read a SQL migration description.")
+                            OrbivError::internal("Failed to read a SQL migration description.")
                                 .source(error)
                         })?;
                         let applied_at: i64 = row.try_get("applied_at").map_err(|error| {
-                            OrbitError::internal("Failed to read a SQL migration applied_at.")
+                            OrbivError::internal("Failed to read a SQL migration applied_at.")
                                 .source(error)
                         })?;
                         let execution_time: i64 =
                             row.try_get("execution_time").map_err(|error| {
-                                OrbitError::internal(
+                                OrbivError::internal(
                                     "Failed to read a SQL migration execution_time.",
                                 )
                                 .source(error)
                             })?;
                         let success: bool = row.try_get("success").map_err(|error| {
-                            OrbitError::internal("Failed to read a SQL migration success flag.")
+                            OrbivError::internal("Failed to read a SQL migration success flag.")
                                 .source(error)
                         })?;
                         let failed_reason: Option<String> =
                             row.try_get("failed_reason").map_err(|error| {
-                                OrbitError::internal(
+                                OrbivError::internal(
                                     "Failed to read a SQL migration failed_reason.",
                                 )
                                 .source(error)
@@ -184,7 +184,7 @@ macro_rules! impl_migrator_source {
                     .collect()
             }
 
-            async fn add_record(&self, record: MigrationRecord) -> OrbitResult<()> {
+            async fn add_record(&self, record: MigrationRecord) -> OrbivResult<()> {
                 Self::validate_name(&record.name)?;
                 let version = Self::version_to_i64(record.version)?;
                 let applied_at = record.applied_at.as_millisecond();
@@ -208,20 +208,20 @@ macro_rules! impl_migrator_source {
                             .as_database_error()
                             .is_some_and(|error| error.is_unique_violation()) =>
                     {
-                        Err(OrbitError::bad_argument(format!(
+                        Err(OrbivError::bad_argument(format!(
                             "Migration version {} already exists.",
                             record.version
                         ))
                         .source(error))
                     }
-                    Err(error) => Err(OrbitError::internal(
+                    Err(error) => Err(OrbivError::internal(
                         "Failed to add a migration record to the SQL database.",
                     )
                     .source(error)),
                 }
             }
 
-            async fn remove_record(&self, version: u64) -> OrbitResult<()> {
+            async fn remove_record(&self, version: u64) -> OrbivResult<()> {
                 let sql_version = Self::version_to_i64(version)?;
                 let result = sqlx::query($remove_sql)
                     .bind(&self.component)
@@ -229,14 +229,14 @@ macro_rules! impl_migrator_source {
                     .execute(&self.pool)
                     .await
                     .map_err(|error| {
-                        OrbitError::internal(
+                        OrbivError::internal(
                             "Failed to remove a migration record from the SQL database.",
                         )
                         .source(error)
                     })?;
 
                 if result.rows_affected() == 0 {
-                    return Err(OrbitError::bad_argument(format!(
+                    return Err(OrbivError::bad_argument(format!(
                         "Migration version {version} does not exist."
                     )));
                 }
@@ -251,16 +251,16 @@ impl_migrator_source!(
     sqlx::MySql,
     indoc! { r#"
         SELECT version, name, description, applied_at, execution_time, success, failed_reason
-        FROM orbit_migrations
+        FROM orbiv_migrations
         WHERE component = ?
         ORDER BY version ASC
     "# },
     indoc! { r#"
-        INSERT INTO orbit_migrations (component, version, name, description, applied_at, execution_time, success, failed_reason)
+        INSERT INTO orbiv_migrations (component, version, name, description, applied_at, execution_time, success, failed_reason)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?)
     "# },
     indoc! { r#"
-        DELETE FROM orbit_migrations
+        DELETE FROM orbiv_migrations
         WHERE component = ? AND version = ?
     "# }
 );
@@ -269,16 +269,16 @@ impl_migrator_source!(
     sqlx::Postgres,
     indoc! { r#"
         SELECT version, name, description, applied_at, execution_time, success, failed_reason
-        FROM orbit_migrations
+        FROM orbiv_migrations
         WHERE component = $1
         ORDER BY version ASC
     "# },
     indoc! { r#"
-        INSERT INTO orbit_migrations (component, version, name, description, applied_at, execution_time, success, failed_reason)
+        INSERT INTO orbiv_migrations (component, version, name, description, applied_at, execution_time, success, failed_reason)
         VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
     "# },
     indoc! { r#"
-        DELETE FROM orbit_migrations
+        DELETE FROM orbiv_migrations
         WHERE component = $1 AND version = $2
     "# }
 );
@@ -287,16 +287,16 @@ impl_migrator_source!(
     sqlx::Sqlite,
     indoc! { r#"
         SELECT version, name, description, applied_at, execution_time, success, failed_reason
-        FROM orbit_migrations
+        FROM orbiv_migrations
         WHERE component = ?
         ORDER BY version ASC
     "# },
     indoc! { r#"
-        INSERT INTO orbit_migrations (component, version, name, description, applied_at, execution_time, success, failed_reason)
+        INSERT INTO orbiv_migrations (component, version, name, description, applied_at, execution_time, success, failed_reason)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?)
     "# },
     indoc! { r#"
-        DELETE FROM orbit_migrations
+        DELETE FROM orbiv_migrations
         WHERE component = ? AND version = ?
     "# }
 );

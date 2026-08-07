@@ -362,8 +362,8 @@ dependencies = [
  "anyhow",
  "async-trait",
  "jiff",
- "orbit",
- "orbit-migrator-source-sqlx",
+ "orbiv",
+ "orbiv-migrator-source-sqlx",
  "sqlx",
  "tokio",
 ]
@@ -839,7 +839,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "9f7c3e4beb33f85d45ae3e3a1792185706c8e16d043238c593331cc7cd313b50"
 
 [[package]]
-name = "orbit"
+name = "orbiv"
 version = "0.1.0"
 dependencies = [
  "anyhow",
@@ -850,25 +850,25 @@ dependencies = [
 ]
 
 [[package]]
-name = "orbit-migrator-source-redis"
+name = "orbiv-migrator-source-redis"
 version = "0.1.0"
 dependencies = [
  "async-trait",
  "jiff",
- "orbit",
+ "orbiv",
  "redis",
  "serde",
  "serde_json",
 ]
 
 [[package]]
-name = "orbit-migrator-source-sqlx"
+name = "orbiv-migrator-source-sqlx"
 version = "0.1.0"
 dependencies = [
  "async-trait",
  "indoc",
  "jiff",
- "orbit",
+ "orbiv",
  "sqlx",
 ]
 
