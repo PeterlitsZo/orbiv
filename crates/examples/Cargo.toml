@@ -1,11 +1,11 @@
 [package]
 name = "examples"
-version = "0.1.0"
+version.workspace = true
 edition = "2024"
 
 [dependencies]
-orbiv = { path = "../orbiv" }
-orbiv-migrator-source-sqlx = { path = "../orbiv-migrator-source-sqlx" }
+orbiv = { path = "../orbiv", version = "0.1.0"}
+orbiv-migrator-source-sqlx = { path = "../orbiv-migrator-source-sqlx", version = "0.1.0"}
 
 anyhow = "1.0.104"
 async-trait = "0.1.91"
