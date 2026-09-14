@@ -6,8 +6,40 @@ migrations.
 - `orbiv`: The core crate providing the core migration logic.
 - `orbiv-migrator-source-redis`: A Redis-based source for Orbiv with `redis`
   crate.
+- `orbiv-migrator-source-rusqlite`: A lightweight SQLite source for Orbiv with
+  `rusqlite` and no SQLx or async runtime dependency.
 - `orbiv-migrator-source-sqlx`: A SQL-based source for Orbiv with `sqlx`
   crate.
+
+## SQLite without SQLx
+
+Applications that only use SQLite can keep the migration metadata dependency
+small by using `orbiv-migrator-source-rusqlite`:
+
+```bash
+cargo add orbiv
+cargo add orbiv-migrator-source-rusqlite
+cargo add rusqlite@0.39.0 --no-default-features
+```
+
+Share a connection between the application handler and migrator source. This
+also works with an in-memory SQLite database:
+
+```rust
+use std::sync::{Arc, Mutex};
+
+use orbiv_migrator_source_rusqlite::OrbivMigratorSourceRusqlite;
+
+let connection = Arc::new(Mutex::new(rusqlite::Connection::open_in_memory()?));
+let source = OrbivMigratorSourceRusqlite::new("default", connection.clone())?;
+```
+
+The source uses synchronous `rusqlite` operations behind the async
+`MigratorSource` interface, so a metadata operation may briefly block the async
+executor. Use `orbiv-migrator-source-sqlx` when fully asynchronous database
+access or support for multiple SQL databases is required. Enable the new
+crate's `bundled` feature if the application should compile and link its own
+SQLite instead of using the system library.
 
 ## Tutorial
 

@@ -9,10 +9,12 @@ readme.workspace = true
 
 [dependencies]
 orbiv = { path = "../orbiv", version = "0.1.1"}
+orbiv-migrator-source-rusqlite = { path = "../orbiv-migrator-source-rusqlite", version = "0.1.1", features = ["bundled"] }
 orbiv-migrator-source-sqlx = { path = "../orbiv-migrator-source-sqlx", version = "0.1.1"}
 
 anyhow = "1.0.104"
 async-trait = "0.1.91"
 jiff = { version = "0.2.35", features = ["serde"] }
+rusqlite = { version = "0.39.0", default-features = false }
 tokio = { version = "1", features = ["full"] }
 sqlx = { version = "0.9.0", features = ["postgres"] }
