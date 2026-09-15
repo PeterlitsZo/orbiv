@@ -164,5 +164,11 @@ let migrator = Migrator::builder()
     .migrations(migrations)
     .build()
     .unwrap();
+
+// No migrations have been applied yet. This also prepares the migrator source;
+// callers do not need to call MigratorSource::install themselves.
+assert_eq!(migrator.current_version().await.unwrap(), 0);
+
 migrator.up(MigratorSteps::All).await.unwrap();
+assert_eq!(migrator.current_version().await.unwrap(), 2);
 ```

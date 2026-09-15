@@ -1,4 +1,7 @@
-use std::sync::{Arc, Mutex};
+use std::sync::{
+    Arc, Mutex,
+    atomic::{AtomicUsize, Ordering},
+};
 
 use orbiv::{Migration, MigrationRecord, Migrator, MigratorSource, MigratorSteps, OrbivResult};
 
@@ -61,11 +64,13 @@ impl Migration<MemoryHandler> for MigrationV002 {
 #[derive(Clone, Default)]
 struct MemoryMigratorSource {
     records: Arc<Mutex<Vec<MigrationRecord>>>,
+    install_count: Arc<AtomicUsize>,
 }
 
 #[async_trait::async_trait]
 impl MigratorSource for MemoryMigratorSource {
     async fn install(&self) -> OrbivResult<()> {
+        self.install_count.fetch_add(1, Ordering::Relaxed);
         Ok(())
     }
 
@@ -102,7 +107,15 @@ async fn main() {
         .migrations(migrations)
         .build()
         .unwrap();
+
+    // Reading the initial version installs the source once. Later operations
+    // reuse that successful installation.
+    assert_eq!(migrator.current_version().await.unwrap(), 0);
+    assert_eq!(source.install_count.load(Ordering::Relaxed), 1);
+
     migrator.up(MigratorSteps::All).await.unwrap();
+    assert_eq!(migrator.current_version().await.unwrap(), 2);
+    assert_eq!(source.install_count.load(Ordering::Relaxed), 1);
 
     // The migrations were applied successfully.
     assert_eq!(handler.lock().unwrap().len(), 2);
@@ -119,6 +132,8 @@ async fn main() {
 
     // Revert the migrations.
     migrator.down(MigratorSteps::Number(1)).await.unwrap();
+    assert_eq!(migrator.current_version().await.unwrap(), 1);
+    assert_eq!(source.install_count.load(Ordering::Relaxed), 1);
     assert_eq!(handler.lock().unwrap().len(), 1);
     assert_eq!(handler.lock().unwrap()[0], "foobar");
     let records = source.list_records().await.unwrap();

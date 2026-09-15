@@ -1,14 +1,26 @@
+use std::sync::atomic::{AtomicBool, Ordering};
+
 use crate::{Migration, MigrationRecord, MigratorSource, OrbivError, OrbivResult};
 
+/// Validates and applies a sequence of migrations using a persistent source.
+///
+/// A migrator owns the application handler, the migration-record source, and
+/// the ordered local migration list. Before applying, reverting, or reporting
+/// a version, it validates that local migrations and persisted history agree.
 pub struct Migrator<H, S> {
     handler: H,
     source: S,
     migrations: Vec<Box<dyn Migration<H>>>,
+    installed: AtomicBool,
 }
 
+/// Selects how many migrations an [`Migrator::up`] or [`Migrator::down`] call
+/// should process.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum MigratorSteps {
+    /// Process every available migration.
     All,
+    /// Process at most the given number of migrations.
     Number(u64),
 }
 
@@ -26,13 +38,21 @@ where
     H: Send + Sync + 'static,
     S: MigratorSource,
 {
+    /// Creates a builder for a migrator.
+    ///
+    /// A handler, source, and migration list must all be provided before
+    /// calling [`MigratorBuilder::build`].
     pub fn builder() -> MigratorBuilder<H, S> {
         MigratorBuilder::new()
     }
 
+    /// Applies up to `steps` pending migrations in ascending version order.
+    ///
+    /// The operation stops if persisted history contains a failed migration or
+    /// does not match the local migration list. A failed `up` call is recorded
+    /// in the source before its error is returned.
     pub async fn up(&self, steps: MigratorSteps) -> OrbivResult<()> {
-        self.source
-            .install()
+        self.ensure_installed()
             .await
             .map_err(|e| e.context("install for up"))?;
 
@@ -95,9 +115,13 @@ where
         Ok(())
     }
 
+    /// Reverts up to `steps` applied migrations in descending version order.
+    ///
+    /// The operation stops if persisted history contains a failed migration or
+    /// does not match the local migration list. Each record is removed only
+    /// after its migration is reverted successfully.
     pub async fn down(&self, steps: MigratorSteps) -> OrbivResult<()> {
-        self.source
-            .install()
+        self.ensure_installed()
             .await
             .map_err(|e| e.context("install for down"))?;
 
@@ -132,6 +156,41 @@ where
                 .map_err(|e| e.context("remove a record after revert successfully"))?;
         }
 
+        Ok(())
+    }
+
+    /// Returns the current schema version recorded by the migration source.
+    ///
+    /// `0` means that no migrations have been applied. This method reads the
+    /// source on every call and validates the returned history against the local
+    /// migration list. It returns an error instead of a version when history
+    /// contains a failed migration or is otherwise inconsistent.
+    pub async fn current_version(&self) -> OrbivResult<u64> {
+        self.ensure_installed()
+            .await
+            .map_err(|e| e.context("install for current version"))?;
+
+        let records = self.source.list_records().await?;
+        let has_failed = records.iter().any(|record| !record.success);
+        if has_failed {
+            return Err(OrbivError::has_failed_migration(
+                "Cannot determine the current schema version because there are failed previous migrations.",
+            ));
+        }
+
+        self.validate_migrations()?;
+        let records = self.validate_records(records)?;
+
+        Ok(records.last().map_or(0, |record| record.version))
+    }
+
+    async fn ensure_installed(&self) -> OrbivResult<()> {
+        if self.installed.load(Ordering::Acquire) {
+            return Ok(());
+        }
+
+        self.source.install().await?;
+        self.installed.store(true, Ordering::Release);
         Ok(())
     }
 
@@ -186,6 +245,9 @@ where
     }
 }
 
+/// Builds a [`Migrator`].
+///
+/// The handler, source, and migration list are all required.
 pub struct MigratorBuilder<H, S> {
     handler: Option<H>,
     source: Option<S>,
@@ -207,25 +269,33 @@ where
     H: Send + Sync + 'static,
     S: MigratorSource,
 {
+    /// Creates an empty migrator builder.
     pub fn new() -> Self {
         Self::default()
     }
 
+    /// Sets the application handler passed to each migration.
     pub fn handler(mut self, handler: H) -> Self {
         self.handler = Some(handler);
         self
     }
 
+    /// Sets the persistent migration-record source.
     pub fn source(mut self, source: S) -> Self {
         self.source = Some(source);
         self
     }
 
+    /// Sets the ordered migration list.
     pub fn migrations(mut self, migrations: Vec<Box<dyn Migration<H>>>) -> Self {
         self.migrations = Some(migrations);
         self
     }
 
+    /// Builds the migrator.
+    ///
+    /// Returns an error when the handler, source, or migration list has not
+    /// been provided.
     pub fn build(self) -> OrbivResult<Migrator<H, S>> {
         let handler = self
             .handler
@@ -241,6 +311,7 @@ where
             handler,
             source,
             migrations,
+            installed: AtomicBool::new(false),
         })
     }
 }
