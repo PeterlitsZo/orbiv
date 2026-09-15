@@ -8,9 +8,9 @@ license.workspace = true
 readme.workspace = true
 
 [dependencies]
-orbiv = { path = "../orbiv", version = "0.1.1"}
-orbiv-migrator-source-rusqlite = { path = "../orbiv-migrator-source-rusqlite", version = "0.1.1", features = ["bundled"] }
-orbiv-migrator-source-sqlx = { path = "../orbiv-migrator-source-sqlx", version = "0.1.1"}
+orbiv = { path = "../orbiv", version = "0.2.0"}
+orbiv-migrator-source-rusqlite = { path = "../orbiv-migrator-source-rusqlite", version = "0.2.0", features = ["bundled"] }
+orbiv-migrator-source-sqlx = { path = "../orbiv-migrator-source-sqlx", version = "0.2.0"}
 
 anyhow = "1.0.104"
 async-trait = "0.1.91"

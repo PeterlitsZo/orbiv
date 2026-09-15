@@ -12,6 +12,6 @@ bundled = ["rusqlite/bundled"]
 [dependencies]
 async-trait = "0.1.91"
 jiff = "0.2.35"
-orbiv = { path = "../orbiv", version = "0.1.1" }
+orbiv = { path = "../orbiv", version = "0.2.0" }
 rusqlite = { version = "0.39.0", default-features = false }
 indoc = "2.0.7"
