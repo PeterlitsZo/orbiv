@@ -14,10 +14,17 @@ pub trait MigratorSource: Send + Sync {
         "default".to_string()
     }
 
-    /// Install something before other methods are called.
+    /// Prepares the source before other methods are called.
     ///
     /// For example, if the migrator source is a database, this might create the
-    /// necessary tables.
+    /// necessary tables. Implementations MUST be idempotent: calling this method
+    /// after the source is already prepared must succeed without changing or
+    /// destroying existing migration records.
+    ///
+    /// A [`crate::Migrator`] caches successful installation for its own
+    /// lifetime, but concurrent first calls or separate migrators that share a
+    /// source can still invoke this method more than once. A failed installation
+    /// may be retried by a later operation.
     async fn install(&self) -> OrbivResult<()>;
 
     /// Lists all migration records from the source.
