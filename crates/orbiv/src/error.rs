@@ -1,6 +1,10 @@
 use std::error::Error;
 use std::fmt::{Debug, Display};
 
+/// An error produced by Orbiv while validating or executing migrations.
+///
+/// The error exposes a stable [`OrbivErrorKind`] for programmatic handling and
+/// can retain both operation context and the original source error.
 pub struct OrbivError {
     /// The kind of error that occurred.
     kind: OrbivErrorKind,

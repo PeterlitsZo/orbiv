@@ -25,7 +25,7 @@ cargo add rusqlite@0.39.0 --no-default-features
 Share a connection between the application handler and migrator source. This
 also works with an in-memory SQLite database:
 
-```rust
+```rust,ignore
 use std::sync::{Arc, Mutex};
 
 use orbiv_migrator_source_rusqlite::OrbivMigratorSourceRusqlite;
@@ -45,7 +45,7 @@ SQLite instead of using the system library.
 
 Use `cargo` to add dependencies to your project:
 
-```
+```bash
 cargo add orbiv
 cargo add orbiv-migrator-source-sqlx
 ```
@@ -72,7 +72,7 @@ impl PostgresHandler {
 Then we need to define some `Migration` objects. Here is the first `Migration`
 we will define:
 
-```rust
+```rust,ignore
 struct MigrationV001;
 
 #[async_trait::async_trait]
@@ -124,7 +124,7 @@ It is very simple:
 
 Then we can give the handler, source and migrations list here:
 
-````rust
+````rust,ignore
 use orbiv_migrator_source_sqlx::{OrbivMigratorSourceSqlx, OrbivMigratorSourceSqlxOptions};
 
 // You can use this command to run a PostgreSQL server locally:
@@ -156,7 +156,7 @@ store the migration metadata in Redis.
 
 Then it is very easy to build a migrator and let it run:
 
-```rust
+```rust,ignore
 // Build the migrator and apply the migrations.
 let migrator = Migrator::builder()
     .handler(handler.clone())

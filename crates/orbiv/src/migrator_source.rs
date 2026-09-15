@@ -43,13 +43,21 @@ pub trait MigratorSource: Send + Sync {
     async fn remove_record(&self, version: u64) -> OrbivResult<()>;
 }
 
+/// A persistent record describing one attempted migration.
 #[derive(Debug, Clone)]
 pub struct MigrationRecord {
+    /// The migration version, starting at `1`.
     pub version: u64,
+    /// The stable migration name.
     pub name: String,
+    /// A human-readable description of the migration.
     pub description: String,
+    /// The timestamp at which the migration started.
     pub applied_at: jiff::Timestamp,
+    /// The time spent executing the migration.
     pub execution_time: jiff::SignedDuration,
+    /// Whether the migration completed successfully.
     pub success: bool,
+    /// The recorded error when [`MigrationRecord::success`] is `false`.
     pub failed_reason: Option<String>,
 }
