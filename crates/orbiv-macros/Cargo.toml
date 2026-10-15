@@ -1,0 +1,16 @@
+[package]
+name = "orbiv-macros"
+version.workspace = true
+edition = "2024"
+description.workspace = true
+license.workspace = true
+readme.workspace = true
+
+[lib]
+proc-macro = true
+
+[dependencies]
+proc-macro-crate = "3"
+proc-macro2 = "1"
+quote = "1"
+syn = { version = "2", features = ["full"] }

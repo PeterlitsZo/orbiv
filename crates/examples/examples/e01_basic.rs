@@ -9,20 +9,12 @@ type MemoryHandler = Arc<Mutex<Vec<String>>>;
 
 struct MigrationV001;
 
-#[async_trait::async_trait]
+#[orbiv::migration(
+    version = 1,
+    name = "add foobar",
+    description = "Adds a 'foobar' string to the memory handler."
+)]
 impl Migration<MemoryHandler> for MigrationV001 {
-    fn version(&self) -> u64 {
-        1
-    }
-
-    fn name(&self) -> &str {
-        "add foobar"
-    }
-
-    fn description(&self) -> &str {
-        "Adds a 'foobar' string to the memory handler."
-    }
-
     async fn up(&self, handler: &MemoryHandler) -> OrbivResult<()> {
         handler.lock().unwrap().push("foobar".to_string());
         Ok(())
@@ -36,20 +28,12 @@ impl Migration<MemoryHandler> for MigrationV001 {
 
 struct MigrationV002;
 
-#[async_trait::async_trait]
+#[orbiv::migration(
+    version = 2,
+    name = "add barfoo",
+    description = "Adds a 'barfoo' string to the memory handler."
+)]
 impl Migration<MemoryHandler> for MigrationV002 {
-    fn version(&self) -> u64 {
-        2
-    }
-
-    fn name(&self) -> &str {
-        "add barfoo"
-    }
-
-    fn description(&self) -> &str {
-        "Adds a 'barfoo' string to the memory handler."
-    }
-
     async fn up(&self, handler: &MemoryHandler) -> OrbivResult<()> {
         handler.lock().unwrap().push("barfoo".to_string());
         Ok(())
