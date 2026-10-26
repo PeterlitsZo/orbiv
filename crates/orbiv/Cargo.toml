@@ -4,10 +4,10 @@ version.workspace = true
 edition = "2024"
 description.workspace = true
 license.workspace = true
-readme.workspace = true
+readme = "README.md"
 
 [dependencies]
-orbiv-macros = { path = "../orbiv-macros", version = "0.2.0" }
+orbiv-macros = { path = "../orbiv-macros", version = "0.3.0" }
 anyhow = "1.0.104"
 async-trait = "0.1.91"
 jiff = { version = "0.2.35", features = ["serde"] }
