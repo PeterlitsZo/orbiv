@@ -1,3 +1,5 @@
+//! SQL migrator sources for Orbiv, backed by SQLx with MySQL, PostgreSQL, and SQLite support.
+
 use indoc::indoc;
 use orbiv::{MigrationRecord, MigratorSource, OrbivError, OrbivResult};
 use sqlx::{Database, Pool, Row};
@@ -16,13 +18,19 @@ const CREATE_MIGRATIONS_TABLE_SQL: &str = indoc! {r#"
     )
 "#};
 
+/// Options for a SQLx-backed migration-record source.
 pub struct OrbivMigratorSourceSqlxOptions<DB>
 where
     DB: Database,
 {
+    /// The connection pool used to store and retrieve migration records.
     pub pool: Pool<DB>,
 }
 
+/// Stores Orbiv migration records in a SQL database.
+///
+/// Implements [`MigratorSource`] for MySQL, PostgreSQL, and SQLite. Records are
+/// stored in the `orbiv_migrations` table and isolated by component name.
 pub struct OrbivMigratorSourceSqlx<DB>
 where
     DB: Database,
@@ -47,6 +55,11 @@ impl<DB> OrbivMigratorSourceSqlx<DB>
 where
     DB: Database,
 {
+    /// Creates a SQLx-backed migrator source using an existing connection pool.
+    ///
+    /// Returns an error if the component name exceeds 127 characters. This
+    /// constructor does not access the database; [`MigratorSource::install`]
+    /// creates the migration-record table.
     pub fn new(
         component: impl Into<String>,
         opts: OrbivMigratorSourceSqlxOptions<DB>,

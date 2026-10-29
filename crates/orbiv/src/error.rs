@@ -31,6 +31,7 @@ impl OrbivError {
         }
     }
 
+    /// Creates an error for an internal failure.
     pub fn internal<T>(message: T) -> Self
     where
         T: Into<String>,
@@ -38,6 +39,7 @@ impl OrbivError {
         Self::new(OrbivErrorKind::Internal, message)
     }
 
+    /// Creates an error for an operation that is not implemented.
     pub fn unimplemented<T>(message: T) -> Self
     where
         T: Into<String>,
@@ -45,6 +47,7 @@ impl OrbivError {
         Self::new(OrbivErrorKind::Unimplemented, message)
     }
 
+    /// Creates an error for an invalid argument.
     pub fn bad_argument<T>(message: T) -> Self
     where
         T: Into<String>,
@@ -52,6 +55,7 @@ impl OrbivError {
         Self::new(OrbivErrorKind::BadArgument, message)
     }
 
+    /// Creates an error indicating that migration history contains a failed migration.
     pub fn has_failed_migration<T>(message: T) -> Self
     where
         T: Into<String>,
@@ -59,6 +63,7 @@ impl OrbivError {
         Self::new(OrbivErrorKind::HasFailedMigration, message)
     }
 
+    /// Creates an error for an invalid migration or inconsistent migration history.
     pub fn invalid_migration<T>(message: T) -> Self
     where
         T: Into<String>,
@@ -130,6 +135,7 @@ impl Error for OrbivError {
     }
 }
 
+/// Classifies an Orbiv error for programmatic handling.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum OrbivErrorKind {
     /// An internal error occurred.
@@ -144,4 +150,5 @@ pub enum OrbivErrorKind {
     InvalidMigration,
 }
 
+/// The result of an Orbiv operation, with [`OrbivError`] as its error type.
 pub type OrbivResult<T> = Result<T, OrbivError>;

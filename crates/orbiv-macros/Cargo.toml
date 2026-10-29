@@ -3,6 +3,7 @@ name = "orbiv-macros"
 version.workspace = true
 edition = "2024"
 description.workspace = true
+homepage.workspace = true
 license.workspace = true
 readme.workspace = true
 

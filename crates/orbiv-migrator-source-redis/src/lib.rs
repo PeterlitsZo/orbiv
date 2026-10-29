@@ -1,3 +1,5 @@
+//! A Redis-backed migration-record source for Orbiv.
+
 use orbiv::{MigrationRecord, MigratorSource, OrbivError, OrbivResult};
 use redis::AsyncCommands;
 

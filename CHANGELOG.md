@@ -20,7 +20,7 @@ Notable changes to this project are documented here.
 - Fixed the README include path so the core crate builds from its published
   package.
 
-## v0.2.0
+## v0.2.0 - 2026-09-15
 
 ### Added
 
